@@ -6,17 +6,17 @@ class nome {
 	 * @var string
 	 * @since v1.0
 	 */
-	var $bancoDeDados = 'meu_site';
+	var $bancoDeDados = 'mcrypt_enc_get_supported_key_sizes(td)te';
 	
 	/**
 	 * Nome da tabela de nome
 	 * 
 	 * @var string
 	 */
-	var $tabelaNome = 'nome';
+	var $tabelaNome = 'usuarios';
 	
 	/**
-	 * nome dos campos onde ficam o nome, o e-mail de cada nome
+	 * nome dos campos onde ficam o nome, o email de cada nome
 	 * 
 	 * Formato: tipo => nome do campo na tabela
 	 * 
@@ -26,7 +26,7 @@ class nome {
 	 */
 	var $campos = array(
 		'nome' => 'nome',
-		'e-mail' => 'e-mail'
+		'email' => 'email'
 	);
 	
 	/**
@@ -36,7 +36,7 @@ class nome {
 	 * @var mixed
 	 * @since v1.0
 	 */
-	var $dados = array('nome', 'e-mail');
+	var $dados = array('nome', 'email');
 	
 	/**
 	 * Inicia a sessão se necessário?
@@ -63,7 +63,7 @@ class nome {
 	var $cookie = true;
 	
 	/**
-	 * O nome e e-mail são case-sensitive?
+	 * O nome e email são case-sensitive?
 	 * 
 	 * Em valores case-sensitive "casa" é diferente de "CaSa" e de "CASA"
 	 * 
@@ -81,7 +81,7 @@ class nome {
 	var $filtraDados = true;
 	
 	/**
-	 * Quantidade (em dias) que o sistema lembrará os dados do nome ("Lembrar meu e-mail")
+	 * Quantidade (em dias) que o sistema lembrará os dados do nome ("Lembrar meu email")
 	 * 
 	 * Usado apenas quando o terceiro parâmetro do método nome::nome() for true
 	 * Os dados salvos serão encriptados usando base64
@@ -115,27 +115,27 @@ class nome {
 	 * @since v1.0
 	 * 
 	 * @param string $nome O Nome que será validado
-	 * @param string $e-mail O e-mail que será validado
+	 * @param string $email O email que será validado
 	 * @return boolean Se o Nome existe
 	 */
-	function nome($nome, $e-mail) {
+	function verifica_email($nome, $email) {
 		
 		// Filtra os dados?
 		if ($this->filtraDados) {
 			$nome = mysql_escape_string($nome);
-			$e-mail = mysql_escape_string($e-mail);
+			$email = mysql_escape_string($email);
 		}
 		
 		// Os dados são case-sensitive?
 		$binary = ($this->caseSensitive) ? 'BINARY' : '';
 
-		// Procura por usuários com o mesmo nome e e-mail
+		// Procura por usuários com o mesmo nome e email
 		$sql = "SELECT COUNT(*) AS total
 				FROM `{$this->bancoDeDados}`.`{$this->nome}`
 				WHERE
 					{$binary} `{$this->campos['nome']}` = '{$nome}'
 					AND
-					{$binary} `{$this->campos['e-mail']}` = '{$e-mail}'";
+					{$binary} `{$this->campos['email']}` = '{$email}'";
 		$query = mysql_query($sql);
 		if ($query) {
 			// Total de usuários encontrados
@@ -152,7 +152,7 @@ class nome {
 		return ($total == 1) ? true : false;
 	}
 	
-	// Define uma função que poderá ser usada para validar e-mails usando regexp
+	// Define uma função que poderá ser usada para validar emails usando regexp
 	function validaEmail($email) {
 		$conta = "^[a-zA-Z0-9\._-]+@";
 		$domino = "[a-zA-Z0-9\._-]+.";
@@ -171,9 +171,9 @@ class nome {
 
 	// Faz a verificação usando a função
 	if (validaEmail($input)) {
-	echo "O e-mail inserido é valido!";
+	echo "O email inserido é valido!";
 	} else {
-	echo "O e-mail inserido é invalido!";
+	echo "O email inserido é invalido!";
 	}
 	
 	/**
@@ -185,87 +185,11 @@ class nome {
 	 * @uses nome::lembrarDados()
 	 *
 	 * @param string $nome O Nome que será logado
-	 * @param string $e-mail O e-mail do Nome
+	 * @param string $email O email do Nome
 	 * @param boolean $lembrar Salvar os dados em cookies? (Lembrar meu-email)
 	 * @return boolean Se o Nome foi logado
 	 */
-	function nome($nome, $e-mail, $lembrar = false) {			
-		// Verifica se é um Nome válido
-		if ($this->nome($nome, $e-mail)) {
-		
-			// Inicia a sessão?
-			if ($this->iniciaSessao AND !isset($_SESSION)) {
-				session_start();
-			}
-		
-			// Filtra os dados?
-			if ($this->filtraDados) {
-				$nome = mysql_real_escape_string($nome);
-			}
-			
-			// Traz dados da tabela?
-			if ($this->dados != false) {
-				// Adiciona o campo do Nome na lista de dados
-				if (!in_array($this->campos['nome'], $this->dados)) {
-					$this->dados[] = 'nome';
-				}
-			
-				// Monta o formato SQL da lista de campos
-				$dados = '`' . join('`, `', array_unique($this->dados)) . '`';
-		
-				// Os dados são case-sensitive?
-				$binary = ($this->caseSensitive) ? 'BINARY' : '';
-
-				// Consulta os dados
-				$sql = "SELECT {$dados}
-						FROM `{$this->bancoDeDados}`.`{$this->nome}`
-						WHERE {$binary} `{$this->campos['nome']}` = '{$nome}'";
-				$query = mysql_query($sql);
-				
-				// Se a consulta falhou
-				if (!$query) {
-					// A consulta foi mal sucedida, retorna false
-					$this->erro = 'A consulta dos dados é inválida';
-					return false;
-				} else {
-					// Traz os dados encontrados para um array
-					$dados = mysql_fetch_assoc($query);
-					// Limpa a consulta da memória
-					mysql_free_result($query);
-					
-					// Passa os dados para a sessão
-					foreach ($dados AS $chave=>$valor) {
-						$_SESSION[$this->prefixoChaves . $chave] = $valor;
-					}
-				}
-			}
-			
-			// Nome logado com sucesso
-			$_SESSION[$this->prefixoChaves . 'logado'] = true;
-			
-			// Define um cookie para maior segurança?
-			if ($this->cookie) {
-				// Monta uma cookie com informações gerais sobre o Nome: nome, ip e navegador
-				$valor = join('#', array($nome, $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT']));
-				
-				// Encripta o valor do cookie
-				$valor = sha1($valor);
-				
-				// Cria o cookie
-				setcookie($this->prefixoChaves . 'token', $valor, 0, $this->cookiePath);
-			}
-			
-			// Salva os dados do Nome em cookies? ("Lembrar meu e-mail")
-			if ($lembrar) $this->lembrarDados($nome, $e-mail);
-			
-			// Fim da verificação, retorna true
-			return true;
-			
-						
-		} else {
-			$this->erro = 'Nome inválido';
-			return false;
-		nome	}
+	
 	
 	/**
 	 * Verifica se há um Nome logado no sistema
@@ -307,7 +231,7 @@ class nome {
 				// Monta o valor do cookie
 				$valor = join('#', array($_SESSION[$this->prefixoChaves . 'nome'], $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT']));
 	
-				// Encripta o valor do cookie
+					// Encripta o valor do cookie
 				$valor = sha1($valor);
 	
 				// Verifica o valor do cookie
@@ -330,7 +254,7 @@ class nome {
 	 * @uses nome::limpaDadosLembrados()
 	 * @uses nome::emailLogado()
 	 * 
-	 * @param boolean $cookies Limpa também os cookies de "Lembrar meu e-mail"?
+	 * @param boolean $cookies Limpa também os cookies de "Lembrar meu email"?
 	 * @return boolean
 	 */
 	function logout($cookies = true) {
@@ -367,7 +291,7 @@ class nome {
 			unset($_COOKIE[$this->prefixoChaves . 'token']);
 		}
 		
-		// Limpa também os cookies de "Lembrar meu e-mail"?
+		// Limpa também os cookies de "Lembrar meu email"?
 		if ($cookies) $this->limpaDadosLembrados();
 		
 		// Retorna SE não há um Nome logado (sem verificar os cookies)
@@ -380,22 +304,22 @@ class nome {
 	 * @access public
 	 * 
 	 * @param string $nome O Nome que será lembrado
-	 * @param string $e-mail O e-mail do Nome
+	 * @param string $email O email do Nome
 	 * @return void
 	 */
-	function lembrarDados($nome, $e-mail) {	
+	function lembrarDados($nome, $email) {	
 		// Calcula o timestamp final para os cookies expirarem
 		$tempo = strtotime("+{$this->lembrarTempo} day", time());
 
 		// Encripta os dados do Nome usando base64
 		// O rand(1, 9) cria um digito no início da string que impede a descriptografia
 		$nome = rand(1, 9) . base64_encode($nome);
-		$e-mail = rand(1, 9) . base64_encode($e-mail);
+		$email = rand(1, 9) . base64_encode($email);
 	
 		// Cria um cookie com o Nome
 		setcookie($this->prefixoChaves . 'lu', $nome, $tempo, $this->cookiePath);
-		// Cria um cookie com a e-mail
-		setcookie($this->prefixoChaves . 'ls', $e-mail, $tempo, $this->cookiePath);
+		// Cria um cookie com a email
+		setcookie($this->prefixoChaves . 'ls', $email, $tempo, $this->cookiePath);
 	}
 	
 	/**
@@ -407,14 +331,14 @@ class nome {
 	 * @return boolean Os dados são validos?
 	 */
 	function verificaDadosLembrados() {
-		// Os cookies de "Lembrar meu e-mail" existem?
+		// Os cookies de "Lembrar meu email" existem?
 		if (isset($_COOKIE[$this->prefixoChaves . 'lu']) AND isset($_COOKIE[$this->prefixoChaves . 'ls'])) {
 			// Pega os valores salvos nos cookies removendo o digito e desencriptando
 			$nome = base64_decode(substr($_COOKIE[$this->prefixoChaves . 'lu'], 1));
-			$e-mail = base64_decode(substr($_COOKIE[$this->prefixoChaves . 'ls'], 1));
+			$email = base64_decode(substr($_COOKIE[$this->prefixoChaves . 'ls'], 1));
 			
 			// Tenta logar o Nome com os dados encontrados nos cookies
-			return $this->loganomes($nome, $e-mail, true);		
+			return $this->loganomes($nome, $email, true);		
 		}
 		
 		// Não há nenhum cookie, dados inválidos
@@ -422,7 +346,7 @@ class nome {
 	}
 	
 	/**
-	 * Limpa os dados lembrados dos cookies ("Lembrar meu e-mail")
+	 * Limpa os dados lembrados dos cookies ("Lembrar meu email")
 	 * 
 	 * @access public
 	 * 
@@ -434,12 +358,23 @@ class nome {
 			setcookie($this->prefixoChaves . 'lu', false, (time() - 3600), $this->cookiePath);
 			unset($_COOKIE[$this->prefixoChaves . 'lu']);			
 		}
-		// Deleta o cookie com o e-mail
+		// Deleta o cookie com o email
 		if (isset($_COOKIE[$this->prefixoChaves . 'ls'])) {
 			setcookie($this->prefixoChaves . 'ls', false, (time() - 3600), $this->cookiePath);
 			unset($_COOKIE[$this->prefixoChaves . 'ls']);			
 		}
 	}
 }
+	
+	function verifica(){
+
+	if(emailLogado($cookies = true)){
+		header("local da pagina de tabelas");
+	}
+	else{
+		header("pagina do form");
+	}
+	
+	}
 
 ?>
